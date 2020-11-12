@@ -28,10 +28,10 @@ def CQT(args):
     except :
         print('wa', in_path)
 
-        
+
 params =[]
-for ii, (root, dirs, files) in tqdm(enumerate(os.walk(in_dir))):  
-    if ii < 5000: continue
+for ii, (root, dirs, files) in tqdm(enumerate(os.walk(in_dir))):
+    # if ii < 5000: continue
     if len(files):
         for file in files:
             in_path = os.path.join(root,file)
@@ -44,5 +44,3 @@ pool = Pool(40)
 pool.map(CQT, params)
 pool.close()
 pool.join()
-
-

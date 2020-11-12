@@ -16,7 +16,7 @@ from utility import *
 
 # multi_size train
 def multi_train(**kwargs):
-    parallel = True 
+    parallel = True
     opt.model = 'CQTNet'
     opt.notes='CQTNet'
     opt.batch_size=32
@@ -24,9 +24,9 @@ def multi_train(**kwargs):
     #opt.load_model_path = ''
     opt._parse(kwargs)
     # step1: configure model
-    
-    model = getattr(models, opt.model)() 
-    if parallel is True: 
+
+    model = getattr(models, opt.model)()
+    if parallel is True:
         model = torch.nn.DataParallel(model)
     if parallel is True:
         if opt.load_latest is True:
@@ -41,7 +41,7 @@ def multi_train(**kwargs):
     model.to(opt.device)
     print(model)
     # step2: data
-   
+
     train_data0 = CQT('train', out_length=200)
     train_data1 = CQT('train', out_length=300)
     train_data2 = CQT('train', out_length=400)
@@ -97,14 +97,14 @@ def multi_train(**kwargs):
 
                 running_loss += loss.item()
                 num += target.shape[0]
-        running_loss /= num 
+        running_loss /= num
         print(running_loss)
         if parallel is True:
             model.module.save(opt.notes)
         else:
             model.save(opt.notes)
         # update learning rate
-        scheduler.step(running_loss) 
+        scheduler.step(running_loss)
         # validate
         MAP=0
         MAP += val_slow(model, val_dataloader350, epoch)
@@ -116,7 +116,7 @@ def multi_train(**kwargs):
         print('')
         model.train()
 
-   
+
 @torch.no_grad()
 def multi_val_slow(model, dataloader1,dataloader2, epoch):
     model.eval()
@@ -142,10 +142,10 @@ def multi_val_slow(model, dataloader1,dataloader2, epoch):
             features2 = np.concatenate((features2, feature), axis=0)
         else:
             features2 = feature
-            
+
     features = norm(features+features2)
     dis2d = get_dis2d4(features)
-    
+
     if len(labels) == 350:
         MAP, top10, rank1 = calc_MAP(dis2d, labels,[100, 350])
     else :
@@ -155,9 +155,9 @@ def multi_val_slow(model, dataloader1,dataloader2, epoch):
     model.train()
     return MAP
 
-    
+
 @torch.no_grad()
-def val_slow(model, dataloader, epoch):
+def val_slow(model, dataloader, epoch, name):
     model.eval()
     total, correct = 0, 0
     labels, features = None, None
@@ -189,9 +189,9 @@ def val_slow(model, dataloader, epoch):
     model.train()
     return MAP
 
-    
 
-    
+
+
 def test(**kwargs):
     opt.batch_size=1
     opt.num_workers=1
@@ -199,8 +199,8 @@ def test(**kwargs):
     opt.load_latest = False
     opt.load_model_path = 'check_points/CQTNet.pth'
     opt._parse(kwargs)
-    
-    model = getattr(models, opt.model)() 
+
+    model = getattr(models, opt.model)()
     #print(model)
     if opt.load_latest is True:
         model.load_latest(opt.notes)

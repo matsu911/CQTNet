@@ -46,16 +46,16 @@ class CQT(Dataset):
     def __init__(self, mode='train', out_length=None):
         self.indir = 'data/youtube_cqt_npy/'
         self.mode=mode
-        if mode == 'train': 
+        if mode == 'train':
             filepath='data/SHS100K-TRAIN_6'
         elif mode == 'val':
             filepath='data/SHS100K-VAL'
-        elif mode == 'songs350': 
+        elif mode == 'songs350':
             self.indir = 'data/you350_cqt_npy/'
             filepath='data/you350_list.txt'
-        elif mode == 'test': 
+        elif mode == 'test':
             filepath='data/SHS100K-TEST'
-        elif mode == 'songs80': 
+        elif mode == 'songs80':
             self.indir = 'data/covers80_cqt_npy/'
             filepath = 'data/songs80_list.txt'
         elif mode == 'Mazurkas':
@@ -88,7 +88,7 @@ class CQT(Dataset):
         in_path = self.indir+filename+'.npy'
         data = np.load(in_path) # from 12xN to Nx12
 
-        if self.mode is 'train':
+        if self.mode == 'train':
             data = transform_train(data)
         else:
             data = transform_test(data)
@@ -96,13 +96,13 @@ class CQT(Dataset):
     def __len__(self):
         return len(self.file_list)
 
-    
+
 def change_speed(data, l=0.7, r=1.5): # change data.shape[0]
     new_len = int(data.shape[0]*np.random.uniform(l,r))
     maxx = np.max(data)+1
     data0 = PIL.Image.fromarray((data*255.0/maxx).astype(np.uint8))
     transform = transforms.Compose([
-        transforms.Resize(size=(new_len,data.shape[1])), 
+        transforms.Resize(size=(new_len,data.shape[1])),
     ])
     new_data = transform(data0)
     return np.array(new_data)/255.0*maxx
