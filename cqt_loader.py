@@ -58,6 +58,15 @@ class CQT(Dataset):
         elif mode == 'songs80':
             self.indir = 'data/covers80_cqt_npy/'
             filepath = 'data/songs80_list.txt'
+        elif mode == 'audio':
+            self.indir = 'data/audio_cqt_npy/'
+            filepath = 'data/audio_list.txt'
+        elif mode == 'audio_l1':
+            self.indir = 'data/audio_l1_cqt_npy/'
+            filepath = 'data/audio_l1_list.txt'
+        elif mode == 'audio_l2':
+            self.indir = 'data/audio_l2_cqt_npy/'
+            filepath = 'data/audio_l2_list.txt'
         elif mode == 'Mazurkas':
             self.indir = 'data/Mazurkas_cqt_npy/'
             filepath = 'data/Mazurkas_list.txt'
