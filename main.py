@@ -155,14 +155,14 @@ def multi_val_slow(model, dataloader1,dataloader2, epoch):
     model.train()
     return MAP
 
-
 @torch.no_grad()
-def val_slow(model, dataloader, epoch, name):
+def val_slow2(model, dataloader, epoch, name):
     model.eval()
     total, correct = 0, 0
-    labels, features = None, None
+    labels, features, levels = None, None, None
 
-    for ii, (data, label) in enumerate(dataloader):
+    for ii, (data, label, version, level) in enumerate(dataloader):
+        # print(version, level)
         input = data.to(opt.device)
         #print(input.shape)
         score, feature = model(input)
@@ -170,15 +170,63 @@ def val_slow(model, dataloader, epoch, name):
         label = label.data.cpu().numpy()
         if features is not None:
             features = np.concatenate((features, feature), axis=0)
-            labels = np.concatenate((labels,label))
+            labels = np.concatenate((labels, label))
+            levels = np.concatenate((levels, level))
+        else:
+            features = feature
+            labels = label
+            levels = level
+    features = norm(features)
+
+    features_l0 = features[levels == 0]
+    features_l1 = features[levels == 1]
+    features_l2 = features[((levels == 1) | (levels == 2))]
+    features_l3 = features[levels > 0]
+
+    labels_l0 = labels[levels == 0]
+    labels_l1 = labels[levels == 1]
+    labels_l2 = labels[((levels == 1) | (levels == 2))]
+    labels_l3 = labels[levels > 0]
+
+    print(calc_rank(features_l1, features_l0, labels_l1, labels_l0))
+    print(calc_rank(features_l2, features_l0, labels_l2, labels_l0))
+    print(calc_rank(features_l3, features_l0, labels_l3, labels_l0))
+
+
+def calc_rank(features, features_l0, labels, labels_l0):
+    dis2d = -np.matmul(features, features_l0.T)
+    ranks = []
+    for i, row in enumerate(dis2d):
+        ans = labels[i]
+        l = labels_l0[np.argsort(row)]
+        rank = list(l).index(ans)
+        ranks.append(rank)
+    return sum(np.array(ranks) < 10) / len(ranks)
+
+
+@torch.no_grad()
+def val_slow(model, dataloader, epoch, name):
+    model.eval()
+    total, correct = 0, 0
+    labels, features = None, None
+
+    for ii, (data, label, version, level) in enumerate(dataloader):
+        input = data.to(opt.device)
+        #print(input.shape)
+        score, feature = model(input)
+        feature = feature.data.cpu().numpy()
+        label = label.data.cpu().numpy()
+        if features is not None:
+            features = np.concatenate((features, feature), axis=0)
+            labels = np.concatenate((labels, label))
         else:
             features = feature
             labels = label
     features = norm(features)
     #dis2d = get_dis2d4(features)
     dis2d = -np.matmul(features, features.T) # [-1,1] Because normalized, so mutmul is equal to ED
-    np.save('dis80.npy',dis2d)
-    np.save('label80.npy',labels)
+    np.save('dis_%s.npy' % name, dis2d)
+    np.save('label_%s.npy' % name, labels)
     if len(labels) == 350:
         MAP, top10, rank1 = calc_MAP(dis2d, labels,[100, 350])
     #elif len(labels) == 160:    MAP, top10, rank1 = calc_MAP(dis2d, labels,[80, 160])
@@ -208,20 +256,29 @@ def test(**kwargs):
         model.load(opt.load_model_path)
     model.to(opt.device)
 
-    val_data350 = CQT('songs350', out_length=None)
-    val_data80 = CQT('songs80', out_length=None)
-    val_data = CQT('val', out_length=None)
-    test_data = CQT('test', out_length=None)
-    val_datatMazurkas = CQT('Mazurkas', out_length=None)
-    val_dataloader = DataLoader(val_data, 1, shuffle=False,num_workers=1)
-    test_dataloader = DataLoader(test_data, 1, shuffle=False,num_workers=1)
-    val_dataloader80 = DataLoader(val_data80, 1, shuffle=False, num_workers=1)
-    val_dataloader350 = DataLoader(val_data350, 1, shuffle=False, num_workers=1)
-    val_dataloaderMazurkas = DataLoader(val_datatMazurkas,1, shuffle=False,num_workers=1)
-    
-    val_slow(model, val_dataloader350, 0)
-    val_slow(model, val_dataloader80, 0)
-    val_slow(model, val_dataloaderMazurkas, 0)
+    # val_data350 = CQT('songs350', out_length=None)
+    # val_data80 = CQT('songs80', out_length=None)
+    val_audio = CQT('audio', out_length=None)
+    # val_audio_l1 = CQT('audio_l1', out_length=None)
+    # val_audio_l2 = CQT('audio_l2', out_length=None)
+    # val_data = CQT('val', out_length=None)
+    # test_data = CQT('test', out_length=None)
+    # val_datatMazurkas = CQT('Mazurkas', out_length=None)
+    # val_dataloader = DataLoader(val_data, 1, shuffle=False,num_workers=1)
+    # test_dataloader = DataLoader(test_data, 1, shuffle=False,num_workers=1)
+    # val_dataloader80 = DataLoader(val_data80, 1, shuffle=False, num_workers=1)
+    val_dataloaderaudio = DataLoader(val_audio, 1, shuffle=False, num_workers=1)
+    # val_dataloaderaudio_l1 = DataLoader(val_audio_l1, 1, shuffle=False, num_workers=1)
+    # val_dataloaderaudio_l2 = DataLoader(val_audio_l2, 1, shuffle=False, num_workers=1)
+    # val_dataloader350 = DataLoader(val_data350, 1, shuffle=False, num_workers=1)
+    # val_dataloaderMazurkas = DataLoader(val_datatMazurkas,1, shuffle=False,num_workers=1)
+
+    # val_slow(model, val_dataloader350, 0)
+    # val_slow(model, val_dataloader80, 0, '80')
+    val_slow2(model, val_dataloaderaudio, 0, 'audio')
+    # val_slow(model, val_dataloaderaudio_l1, 0, 'audio_l1')
+    # val_slow(model, val_dataloaderaudio_l2, 0, 'audio_l2')
+    # val_slow(model, val_dataloaderMazurkas, 0)
 
 
 

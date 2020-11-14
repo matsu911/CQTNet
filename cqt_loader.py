@@ -73,6 +73,18 @@ class CQT(Dataset):
         with open(filepath, 'r') as fp:
             self.file_list = [line.rstrip() for line in fp]
         self.out_length = out_length
+        with open('data/audio_list_mapping.txt', 'r') as fp:
+            self.mappings = {}
+            for line in fp:
+                l = line.rstrip()
+                k = l[l.rfind(' ')+1:]
+                v = l[:l.rfind(' ')]
+                self.mappings[k] = {
+                    'level': int(v.split('/')[2][-1]),
+                    'path': v,
+                }
+            # print(self.mappings)
+
     def __getitem__(self, index):
         transform_train = transforms.Compose([
             lambda x : x.T,
@@ -92,6 +104,8 @@ class CQT(Dataset):
             lambda x : x.permute(1,0).unsqueeze(0),
         ])
         filename = self.file_list[index].strip()
+        level = self.mappings[filename]['level']
+        # print(filename, level)
         set_id, version_id = filename.split('.')[0].split('_')
         set_id, version_id = int(set_id), int(version_id)
         in_path = self.indir+filename+'.npy'
@@ -101,7 +115,7 @@ class CQT(Dataset):
             data = transform_train(data)
         else:
             data = transform_test(data)
-        return data, int(set_id)
+        return data, int(set_id), version_id, level
     def __len__(self):
         return len(self.file_list)
 
